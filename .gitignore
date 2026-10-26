@@ -1,0 +1,11 @@
+# Ambiente e cache do Python
+.venv/
+__pycache__/
+*.pyc
+
+# Dados brutos: grandes e reproduzíveis com os scripts (ver README)
+dados/brutos/
+
+# Credenciais (nunca enviar)
+.cdsapirc
+.env
