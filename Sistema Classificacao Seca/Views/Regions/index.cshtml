@@ -1,0 +1,68 @@
+﻿@model List<Sistema_Classificacao_Seca.Model.Region>
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+    <title>Regiões Monitorizadas</title>
+    <style>
+            body {
+                font-family: Arial, sans-serif;
+                background: #f1f5f9;
+                padding: 30px;
+            }
+
+            h1 {
+                color: #14532d;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+            }
+
+            th, td {
+                padding: 15px;
+                border: 1px solid #ddd;
+                text-align: left;
+            }
+
+            th {
+                background: #14532d;
+                color: white;
+            }
+    </style>
+</head>
+<body>
+    <h1>Regiões Monitorizadas</h1>
+
+    <p>Regiões abrangidas pelo sistema de classificação de seca.</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Região</th>
+                <th>Província</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var region in Model)
+            {
+                <tr>
+                    <td>@region.Id</td>
+                    <td>@region.Name</td>
+                    <td>@region.Province</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</body>
+</html>

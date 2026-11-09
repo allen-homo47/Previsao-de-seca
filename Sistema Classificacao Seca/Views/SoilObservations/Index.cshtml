@@ -1,0 +1,120 @@
+﻿@model List<Sistema_Classificacao_Seca.Model.SoilObservation>
+@using Sistema_Classificacao_Seca.Model
+
+@{
+    Layout = null;
+
+    var regions = ViewBag.Regions as List<Region>
+        ?? new List<Region>();
+
+    int? selectedId = ViewBag.SelectedRegionId as int?;
+}
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+    <title>Observações do Solo</title>
+    <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 30px;
+                background: #f1f5f9;
+            }
+
+            h1 {
+                color: #14532d;
+            }
+
+            select, button {
+                padding: 10px;
+                margin: 8px 0;
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                background: white;
+                margin-top: 20px;
+            }
+
+            th, td {
+                padding: 12px;
+                border: 1px solid #ddd;
+                text-align: left;
+            }
+
+            th {
+                background: #14532d;
+                color: white;
+            }
+    </style>
+</head>
+<body>
+    <h1>Observações da Humidade do Solo</h1>
+
+    <form method="get">
+        <label for="regionId">Seleccionar região:</label>
+
+        <select name="regionId" id="regionId">
+            <option value="">Todas as regiões</option>
+
+            @foreach (var region in regions)
+            {
+                if (selectedId == region.Id)
+                {
+                    <option value="@region.Id" selected>
+                        @region.Name
+                    </option>
+                }
+                else
+                {
+                    <option value="@region.Id">
+                        @region.Name
+                    </option>
+                }
+            }
+        </select>
+
+        <button type="submit">Consultar</button>
+    </form>
+
+    @if (Model.Count == 0)
+    {
+        <p>
+            Ainda não existem observações registadas
+            para esta selecção.
+        </p>
+    }
+    else
+    {
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Região</th>
+                    <th>Sentinel-1</th>
+                    <th>ASCAT</th>
+                    <th>Classe de seca</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var observation in Model)
+                {
+                    <tr>
+                        <td>
+                            @observation.Date.ToString("dd/MM/yyyy")
+                        </td>
+                        <td>@observation.Region.Name</td>
+                        <td>@observation.Sentinel1Moisture</td>
+                        <td>@observation.AscatMoisture</td>
+                        <td>@observation.DroughtClass</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</body>
+</html>
