@@ -1,10 +1,12 @@
 ﻿
+
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Sistema_Classificacao_Seca.Model;
 
 namespace Sistema_Classificacao_Seca.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext
     {
         public ApplicationDbContext(
             DbContextOptions<ApplicationDbContext> options)

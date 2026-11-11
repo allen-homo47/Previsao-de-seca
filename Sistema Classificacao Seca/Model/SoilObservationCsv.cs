@@ -44,8 +44,8 @@ namespace Sistema_Classificacao_Seca.Model
 
         [CsvColumn("BulkDensity")]
         public float BulkDensity { get; set; }
-    
-           
+        
+
 
         [CsvColumn("SM_Percentile")]
         public float SM_Percentile { get; set; }

@@ -1,0 +1,92 @@
+﻿@model Sistema_Classificacao_Seca.Services.DroughtEvaluation
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+}
+
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Administração | Classificação de Seca</title>
+    <style>
+            body {
+                font: 1rem/1.5 system-ui;
+                max-width: 52rem;
+                margin: 2rem auto;
+                padding: 0 1rem;
+                color: #15382a;
+            }
+
+            section {
+                border: 1px solid #cad8ce;
+                border-radius: 10px;
+                padding: 1rem;
+                margin-block: 1rem;
+            }
+
+            button {
+                background: #14532d;
+                color: white;
+                border: 0;
+                border-radius: 6px;
+                padding: .65rem 1rem;
+                cursor: pointer;
+            }
+
+            input {
+                display: block;
+                margin: .75rem 0;
+                max-width: 100%;
+            }
+
+            .validation-summary-errors {
+                color: #a51d28;
+            }
+    </style>
+</head>
+<body>
+    <main>
+        <a asp-controller="Drought" asp-action="Index">Voltar ao dashboard</a>
+        <h1>Painel de administração</h1>
+
+        <div asp-validation-summary="All"></div>
+        @if (TempData["Mensagem"] is string mensagem)
+        {
+            <p role="status">@mensagem</p>
+        }
+
+        <section>
+            <h2>Importar observações</h2>
+            <form asp-action="Importar" method="post" enctype="multipart/form-data">
+                <label for="ficheiro">Ficheiro CSV (até 2 MB)</label>
+                <input id="ficheiro" name="ficheiro" type="file" accept=".csv" required />
+                <button type="submit">Importar CSV</button>
+            </form>
+        </section>
+
+        <section>
+            <h2>Treino e avaliação</h2>
+            <form asp-action="Treinar" method="post">
+                <button type="submit">Treinar e avaliar modelos</button>
+            </form>
+            @if (Model is not null)
+            {
+                <p role="status">
+                    @Model.TrainingCount observações de treino e @Model.TestCount de teste.
+                </p>
+                <ul>
+                    @foreach (var result in Model.Models)
+                    {
+                        <li>
+                            @result.Algorithm · Exactidão: @result.Accuracy.ToString("P2")
+                            · Macro-F1: @(result.MacroF1?.ToString("F3") ?? "indisponível")
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </main>
+</body>
+</html>
