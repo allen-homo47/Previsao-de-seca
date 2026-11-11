@@ -54,6 +54,9 @@ namespace Sistema_Classificacao_Seca.Migrations
                     b.Property<float>("AscatMoisture")
                         .HasColumnType("real");
 
+                    b.Property<float>("BulkDensity")
+                        .HasColumnType("real");
+
                     b.Property<float>("Clay")
                         .HasColumnType("real");
 
@@ -64,16 +67,35 @@ namespace Sistema_Classificacao_Seca.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<double>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("float");
+
                     b.Property<float>("OrganicCarbon")
                         .HasColumnType("real");
 
+                    b.Property<string>("Point")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("RegionId")
                         .HasColumnType("int");
+
+                    b.Property<float>("S1_VV_dB")
+                        .HasColumnType("real");
+
+                    b.Property<float>("SM_Percentile")
+                        .HasColumnType("real");
 
                     b.Property<float>("Sand")
                         .HasColumnType("real");
 
                     b.Property<float>("Sentinel1Moisture")
+                        .HasColumnType("real");
+
+                    b.Property<float>("Silt")
                         .HasColumnType("real");
 
                     b.HasKey("Id");
