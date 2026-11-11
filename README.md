@@ -64,3 +64,35 @@ Distribuição obtida: Normal 626, Moderada 80, Severa 40, Extrema 36 (782 linha
 - O Sentinel-1B deixou de funcionar em Dezembro de 2021, o que reduz o número de imagens a partir de 2022.
 - O ASCAT tem resolução de ~25 km: serve como referência regional, não local.
 - Apenas 4 pontos; para o mapa é preciso acrescentar mais pontos nos três scripts.
+
+### ASP.NET Core · Tema 1
+
+Na raiz do repositório, com o SDK .NET 10 e uma instância SQL Server disponível:
+
+```powershell
+dotnet build
+dotnet run --project "Sistema Classificacao Seca" -- --validate-csv dados/processados/tabela_treino.csv
+dotnet ef database update --project "Sistema Classificacao Seca"
+dotnet run --project "Sistema Classificacao Seca" -- --import-csv dados/processados/tabela_treino.csv
+dotnet run --project "Sistema Classificacao Seca" -- --evaluate-csv dados/processados/tabela_treino.csv
+dotnet run --project "Sistema Classificacao Seca"
+```
+
+O comando `dotnet ef` requer a ferramenta dotnet-ef 10.x. Fora do Windows, configure
+`ConnectionStrings__DefaultConnection` para uma instância SQL Server acessível.
+A importação lê o CSV consolidado de Sentinel-1, ASCAT e SoilGrids. O comando valida
+as 782 linhas antes de gravar e ignora chaves região/ponto/data já existentes.
+
+- Dashboard e formulário em `/Drought`. O gráfico usa Chart.js via CDN.
+- `GET /api/regions` lista as regiões.
+- `GET /api/predictions?regionId=1&from=2023-09-01&to=2023-09-30` classifica os pontos observados no período.
+- `POST /api/predictions` recebe JSON com `sentinel1Moisture`, `ascatMoisture`,
+  `month`, `clay`, `sand`, `silt`, `organicCarbon` e `bulkDensity`.
+- `GET /api/models/metrics` devolve as métricas dos dois classificadores.
+- OpenAPI em `/openapi/v1.json` no ambiente de desenvolvimento.
+
+O módulo compara SDCA Maximum Entropy e L-BFGS Maximum Entropy em ML.NET, com separação por data.
+O SDCA é o modelo provisório para classificação. A avaliação mede a capacidade de reproduzir
+os rótulos derivados em `juntar.py`. O percentil fica fora das features, mas os rótulos
+foram calculados com estatísticas de toda a série, incluindo o período de teste. Por isso,
+a avaliação tem carácter retrospectivo. A confiança apresentada é a pontuação do modelo.

@@ -1,0 +1,142 @@
+@model Sistema_Classificacao_Seca.Controllers.DroughtDashboard
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Classificação de seca</title>
+    <style>
+        body { font: 1rem/1.5 system-ui; max-width: 60rem; margin: auto; padding: 1.5rem; color: #143528; }
+        table { border-collapse: collapse; margin-block: 1rem; }
+        th, td { border: 1px solid #bccbc2; padding: .4rem .65rem; text-align: left; }
+        label, input { display: block; }
+        input { margin-bottom: .7rem; }
+        button { background: #14532d; color: white; padding: .55rem 1rem; border: 0; }
+        .validation-summary-errors { color: #912828; }
+    </style>
+</head>
+<body>
+<main>
+    <nav>
+        <a asp-controller="Home" asp-action="Index">Início</a> ·
+        <a asp-controller="Regions" asp-action="Index">Regiões</a> ·
+        <a asp-controller="SoilObservations" asp-action="Index">Observações</a>
+    </nav>
+    <h1>Classificação de seca</h1>
+    <h2>Observações por região</h2>
+    <p>Total de observações: @Model.Counts.Sum(row => row.Count)</p>
+    <table>
+        <thead><tr><th>Região</th><th>Classe observada</th><th>Quantidade</th></tr></thead>
+        <tbody>
+        @foreach (var row in Model.Counts)
+        {
+            <tr><td>@row.Region</td><td>@row.Label</td><td>@row.Count</td></tr>
+        }
+        </tbody>
+    </table>
+
+    @if (Model.Moisture.Count > 0)
+    {
+        <h2>Evolução da humidade superficial do solo</h2>
+        <label for="moisture-region">Região</label>
+        <select id="moisture-region">
+            @foreach (var region in Model.Moisture.Select(row => row.Region).Distinct().Order())
+            {
+                <option>@region</option>
+            }
+        </select>
+        <canvas id="moisture-chart" aria-label="Humidade média dos pontos por data" role="img"></canvas>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+        <script>
+            const observations = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Moisture));
+            const selector = document.getElementById('moisture-region');
+            const chart = new Chart(document.getElementById('moisture-chart'), {
+                type: 'line',
+                data: { datasets: [
+                    { label: 'Sentinel-1 (%)', borderColor: '#15803d', pointRadius: 0 },
+                    { label: 'ASCAT (%)', borderColor: '#1d4ed8', pointRadius: 0 }
+                ] },
+                options: { scales: { y: { min: 0, max: 100 } } }
+            });
+            function showRegion() {
+                const rows = observations.filter(row => row.Region === selector.value);
+                chart.data.labels = rows.map(row => row.Date.slice(0, 10));
+                chart.data.datasets[0].data = rows.map(row => row.Sentinel1);
+                chart.data.datasets[1].data = rows.map(row => row.Ascat);
+                chart.update();
+            }
+            selector.addEventListener('change', showRegion);
+            showRegion();
+        </script>
+    }
+
+    @if (Model.Evaluation is { } evaluation)
+    {
+        <h2>Avaliação do modelo</h2>
+        <p>@evaluation.TrainingCount observações de treino e @evaluation.TestCount de teste, a partir de @evaluation.TestFrom.ToString("dd/MM/yyyy").</p>
+        <p>Exactidão da referência (classe mais frequente no treino): @evaluation.MajorityBaselineAccuracy.ToString("P1")</p>
+        @foreach (var result in evaluation.Models)
+        {
+            <h3>@result.Algorithm</h3>
+            <p>Exactidão: @result.Accuracy.ToString("P1") · Macro-F1: @(result.MacroF1?.ToString("F3") ?? "indisponível")</p>
+            <table>
+                <thead><tr><th>Classe</th><th>Precisão</th><th>Recall</th><th>F1</th><th>Suporte</th></tr></thead>
+                <tbody>
+                @foreach (var (label, metrics) in result.Classes)
+                {
+                    <tr><th>@label</th><td>@(metrics.Precision?.ToString("P1") ?? "—")</td>
+                        <td>@(metrics.Recall?.ToString("P1") ?? "—")</td>
+                        <td>@(metrics.F1?.ToString("F3") ?? "—")</td><td>@metrics.Support</td></tr>
+                }
+                </tbody>
+            </table>
+            <table>
+                <caption>Matriz de confusão</caption>
+                <thead><tr><th>Real / Prevista</th>
+                @foreach (var label in result.Classes.Keys) { <th>@label</th> }
+                </tr></thead>
+                <tbody>
+                @foreach (var (actual, predictions) in result.ConfusionMatrix)
+                {
+                    <tr><th>@actual</th>
+                    @foreach (var label in result.Classes.Keys) { <td>@predictions[label]</td> }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        }
+
+        <h2>Estimar a classe de seca</h2>
+        <form asp-action="Index" method="post">
+            <div asp-validation-summary="All"></div>
+            <label asp-for="Input.Sentinel1Moisture">Humidade Sentinel-1 (0 a 1)</label>
+            <input asp-for="Input.Sentinel1Moisture" type="number" step="any" min="0" max="1" required />
+            <label asp-for="Input.AscatMoisture">Humidade ASCAT (0 a 100%)</label>
+            <input asp-for="Input.AscatMoisture" type="number" step="any" min="0" max="100" required />
+            <label asp-for="Input.Month">Mês (1 a 12)</label>
+            <input asp-for="Input.Month" type="number" min="1" max="12" required />
+            <label asp-for="Input.Clay">Argila (%)</label>
+            <input asp-for="Input.Clay" type="number" step="any" required />
+            <label asp-for="Input.Sand">Areia (%)</label>
+            <input asp-for="Input.Sand" type="number" step="any" required />
+            <label asp-for="Input.Silt">Silte (%)</label>
+            <input asp-for="Input.Silt" type="number" step="any" required />
+            <label asp-for="Input.OrganicCarbon">Carbono orgânico (g/kg)</label>
+            <input asp-for="Input.OrganicCarbon" type="number" step="any" required />
+            <label asp-for="Input.BulkDensity">Densidade aparente (g/cm³)</label>
+            <input asp-for="Input.BulkDensity" type="number" step="any" required />
+            <button type="submit">Estimar classe</button>
+        </form>
+        @if (Model.Prediction is { } prediction)
+        {
+            <p role="status">Classe estimada: <strong>@prediction.DroughtClass</strong> · Confiança do modelo: @prediction.Confidence.ToString("P1") · @prediction.Algorithm</p>
+        }
+    }
+    else
+    {
+        <p>Dados insuficientes para treinar e avaliar o modelo. Importe o dataset para activar a estimativa.</p>
+    }
+</main>
+</body>
+</html>
