@@ -1,0 +1,308 @@
+@model Sistema_Classificacao_Seca.Controllers.ForecastDashboard
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+}
+
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Previsão de Seca</title>
+    <style>
+        :root {
+            --bg: #f4f9f5;
+            --panel: #ffffff;
+            --primary: #14532d;
+            --primary-soft: #dbeee2;
+            --text: #143728;
+            --muted: #56715e;
+            --warning: #f59e0b;
+            --danger: #b91c1c;
+            --shadow: rgba(20, 83, 45, 0.10);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(180deg, #eefaf2 0%, #f7faf8 100%);
+            color: var(--text);
+        }
+
+        .topbar {
+            background: linear-gradient(135deg, #0f3d2b, #14532d);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 8px 24px var(--shadow);
+        }
+
+        .topbar-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            opacity: 0.92;
+        }
+
+        .auth-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+        .auth-actions a, .auth-actions button { color: white; background: transparent; border: 1px solid rgba(255,255,255,.45); border-radius: 8px; padding: .45rem .7rem; text-decoration: none; font: inherit; cursor: pointer; }
+        .auth-actions form { margin: 0; }
+        .auth-name { color: white; }
+
+        .page {
+            max-width: 1180px;
+            margin: 2rem auto;
+            padding: 0 1rem 3rem;
+        }
+
+        .hero {
+            background: var(--panel);
+            border: 1px solid rgba(20, 83, 45, 0.08);
+            border-radius: 20px;
+            box-shadow: 0 16px 36px var(--shadow);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero h1 {
+            margin: 0 0 .5rem 0;
+            font-size: clamp(2rem, 4vw, 2.8rem);
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 1.02rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid rgba(20, 83, 45, 0.08);
+            border-radius: 18px;
+            box-shadow: 0 12px 24px var(--shadow);
+            padding: 1.25rem;
+        }
+
+        .field {
+            display: block;
+            font-weight: 600;
+            margin-bottom: .45rem;
+            color: var(--text);
+        }
+
+        select, input, button {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid #c8d8cf;
+            padding: .8rem .9rem;
+            font-size: 1rem;
+        }
+
+        select, input {
+            background: white;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 1rem;
+            margin: 1.25rem 0;
+        }
+
+        .stat {
+            background: linear-gradient(180deg, #f8fdf9, #edf8f0);
+            border: 1px solid #d4e7d8;
+            border-radius: 14px;
+            padding: 1rem;
+        }
+
+        .stat small {
+            display: block;
+            color: var(--muted);
+            margin-bottom: .25rem;
+            font-weight: 600;
+        }
+
+        .stat strong {
+            font-size: 1.85rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            border-bottom: 1px solid #dfe9df;
+            text-align: left;
+            padding: .8rem .7rem;
+        }
+
+        th {
+            background: #f3faf4;
+        }
+
+        .risk {
+            display: inline-block;
+            padding: .35rem .7rem;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: .85rem;
+            color: white;
+        }
+
+        .baixo { background: #16a34a; }
+        .moderado { background: #f59e0b; }
+        .alto { background: #f97316; }
+        .critico { background: #b91c1c; }
+
+        @@media (max-width: 860px) {
+            .grid { grid-template-columns: 1fr; }
+            .topbar-inner { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div>
+                <strong>Sistema de Previsão de Seca</strong>
+            </div>
+            <nav class="nav">
+                <a href="@Url.Action("Index", "Home")">Início</a>
+                <a href="@Url.Action("Index", "Forecast")">Previsão</a>
+                @if (User.IsInRole("Administrador"))
+                {
+                    <a href="@Url.Action("Index", "Admin")">Administração</a>
+                }
+            </nav>
+            <partial name="_LoginPartial" />
+        </div>
+    </header>
+
+    <main class="page">
+        <section class="hero">
+            <h1>Previsão de risco de seca</h1>
+            <p>
+                Seleccione uma região com dados de treino e o horizonte. A previsão combina a sazonalidade e a tendência observadas na série histórica.
+            </p>
+        </section>
+
+        <div class="grid">
+            <aside class="card">
+                <form method="get" asp-action="Index" asp-controller="Forecast">
+                    <label class="field" for="regionId">Região</label>
+                    <select id="regionId" name="regionId">
+                        @foreach (var region in Model.Regions)
+                        {
+                            <option value="@region.Id" selected="@(region.Id == Model.SelectedRegionId ? "selected" : null)">@region.Name - @region.Province (@region.ObservationCount observações)</option>
+                        }
+                    </select>
+
+                    <label class="field" for="months">Horizonte (meses)</label>
+                    <input id="months" name="months" type="number" min="1" max="12" value="@Model.HorizonMonths" />
+
+                    <button type="submit">Gerar previsão</button>
+                </form>
+            </aside>
+
+            <section class="card">
+                @if (Model.Forecasts.Count > 0)
+                {
+                    var latest = Model.Forecasts.OrderBy(item => item.HorizonMonths).First();
+                    <div class="summary">
+                        <div class="stat">
+                            <small>Risco atual</small>
+                            <strong>@latest.RiskLevel</strong>
+                        </div>
+                        <div class="stat">
+                            <small>Humidade esperada</small>
+                            <strong>@latest.ExpectedMoisture.ToString("F1")%</strong>
+                        </div>
+                        <div class="stat">
+                            <small>Última observação</small>
+                            <strong>@(Model.LatestObservationDate?.ToString("dd/MM/yyyy") ?? "Sem dados")</strong>
+                        </div>
+                        <div class="stat">
+                            <small>Dados usados no cálculo</small>
+                            <strong>@Model.ObservationCount</strong>
+                        </div>
+                    </div>
+
+                    @if (Model.LatestObservationDate is { } latestDate && (DateTime.Today - latestDate.Date).TotalDays > 120)
+                    {
+                        <p role="status">A série de treino termina em @latestDate.ToString("dd/MM/yyyy"). As datas previstas são contadas a partir dessa última observação; actualize os dados para uma previsão operacional actual.</p>
+                    }
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Prazo</th>
+                                <th>Data prevista</th>
+                                <th>Humidade esperada</th>
+                                <th>Risco</th>
+                                <th>Classe</th>
+                                <th>Resumo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Forecasts.OrderBy(item => item.HorizonMonths))
+                            {
+                                <tr>
+                                    <td>@row.HorizonMonths meses</td>
+                                    <td>@row.ForecastDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@row.ExpectedMoisture.ToString("F1")%</td>
+                                    <td><span class="risk @row.RiskLevel.ToLowerInvariant().Replace("í", "i").Replace("ç", "c")">@row.RiskLevel</span></td>
+                                    <td>@row.DroughtClass</td>
+                                    <td>@row.Summary</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p>Não existem dados suficientes para gerar previsão nesta região.</p>
+                }
+            </section>
+        </div>
+    </main>
+</body>
+</html>

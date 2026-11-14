@@ -1,25 +1,16 @@
 ﻿@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
-<ul class="navbar-nav">
+<div class="auth-actions">
 @if (User.Identity?.IsAuthenticated == true)
 {
-    <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Manage/Index">A minha conta</a>
-    </li>
-    <li class="nav-item">
-        <form method="post" asp-area="Identity" asp-page="/Account/Logout"
-              asp-route-returnUrl="/">
-            <button type="submit" class="btn btn-link nav-link">Sair</button>
-        </form>
-    </li>
+    <span class="auth-name">@User.Identity.Name</span>
+    <form method="post" asp-controller="Account" asp-action="Logout">
+        <button type="submit">Sair</button>
+    </form>
 }
 else
 {
-    <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Register">Registar</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" asp-area="Identity" asp-page="/Account/Login">Entrar</a>
-    </li>
+    <a asp-controller="Account" asp-action="Register">Criar conta</a>
+    <a asp-controller="Account" asp-action="Login">Entrar</a>
 }
-</ul>
+</div>

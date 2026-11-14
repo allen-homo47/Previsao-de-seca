@@ -1,8 +1,8 @@
-# Seca Grupo 1 — Recolha de dados
+# Seca Grupo 1 — Sistema de previsão de risco de seca
 
-Recolha e preparação dos dados do **Grupo 1 — AI Soil Moisture Drought Classification System** (Chókwè e Massinga, Moçambique), da disciplina de Programação Web Avançada com .NET.
+Este projeto reúne dados climáticos e de solo para apoiar a análise e a previsão de risco de seca em Chókwè e Massinga, Moçambique, no contexto da disciplina de Programação Web Avançada com .NET.
 
-O resultado final é `dados/processados/tabela_treino.csv`, usado para treinar o modelo de classificação de seca no ML.NET.
+O resultado principal é um painel de monitorização e previsão de risco, usando os dados consolidados em `dados/processados/tabela_treino.csv` e um modelo ML.NET para classificar o nível de severidade atual e estimar o risco em horizonte médio de 30 dias.
 
 ## Fontes de dados
 

@@ -1,0 +1,29 @@
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+    Layout = null;
+}
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Acesso não autorizado | Sistema de Previsão de Seca</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; font-family: "Segoe UI", Arial, sans-serif; color: #183728; background: linear-gradient(145deg, #eaf5ed, #f8fbf8); }
+        main { width: min(100%, 560px); padding: 2.5rem; background: white; border: 1px solid #dce9df; border-radius: 20px; box-shadow: 0 18px 50px rgba(15,61,43,.12); text-align: center; }
+        .icon { width: 58px; height: 58px; margin: 0 auto 1rem; display: grid; place-items: center; border-radius: 50%; color: #8a4b00; background: #fff1d2; font-size: 1.7rem; font-weight: 800; }
+        h1 { margin: .2rem 0 .6rem; color: #0f3d2b; }
+        p { color: #587264; line-height: 1.6; }
+        a { display: inline-block; margin-top: .8rem; padding: .8rem 1.2rem; border-radius: 9px; color: white; background: #14532d; text-decoration: none; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="icon" aria-hidden="true">!</div>
+        <h1>Acesso reservado</h1>
+        <p>A sua conta não tem permissão para abrir esta área. Se precisar de acesso administrativo, contacte o responsável pelo sistema.</p>
+        <a asp-controller="Home" asp-action="Index">Voltar ao dashboard</a>
+    </main>
+</body>
+</html>

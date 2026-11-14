@@ -5,15 +5,22 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Classificação de seca</title>
+    <title>Previsão de risco de seca</title>
     <style>
-        body { font: 1rem/1.5 system-ui; max-width: 60rem; margin: auto; padding: 1.5rem; color: #143528; }
-        table { border-collapse: collapse; margin-block: 1rem; }
+        body { font: 1rem/1.5 system-ui; max-width: 70rem; margin: auto; padding: 1.5rem; color: #143528; }
+        .auth-actions { display: inline-flex; align-items: center; gap: .65rem; margin-left: 1rem; }
+        .auth-actions a, .auth-actions button { color: #14532d; }
+        .auth-actions form { margin: 0; }
+        table { border-collapse: collapse; margin-block: 1rem; width: 100%; }
         th, td { border: 1px solid #bccbc2; padding: .4rem .65rem; text-align: left; }
         label, input { display: block; }
         input { margin-bottom: .7rem; }
-        button { background: #14532d; color: white; padding: .55rem 1rem; border: 0; }
+        button { background: #14532d; color: white; padding: .55rem 1rem; border: 0; cursor: pointer; }
         .validation-summary-errors { color: #912828; }
+        .risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1rem 0; }
+        .risk-card { border: 1px solid #c3d7c9; border-radius: 0.75rem; padding: 1rem; background: #f4faf5; }
+        .risk-card strong { display: block; font-size: 1.5rem; }
+        .status-tag { display: inline-block; padding: .2rem .5rem; border-radius: 999px; background: #dbeafe; }
     </style>
 </head>
 <body>
@@ -22,8 +29,38 @@
         <a asp-controller="Home" asp-action="Index">Início</a> ·
         <a asp-controller="Regions" asp-action="Index">Regiões</a> ·
         <a asp-controller="SoilObservations" asp-action="Index">Observações</a>
+        <partial name="_LoginPartial" />
     </nav>
-    <h1>Classificação de seca</h1>
+    <h1>Previsão de risco de seca</h1>
+    <p>Este painel combina observações históricas com um indicador de risco para apoiar decisões em 30 dias.</p>
+
+    @if (Model.Forecasts.Count > 0)
+    {
+        <h2>Resumo do risco</h2>
+        <div class="risk-grid">
+            <div class="risk-card">
+                <span>Risco geral</span>
+                <strong>@Model.Forecasts.Average(row => row.RiskScore).ToString("F1")%</strong>
+            </div>
+            <div class="risk-card">
+                <span>Baixo</span>
+                <strong>@Model.Forecasts.Count(row => row.RiskLevel == "Baixo")</strong>
+            </div>
+            <div class="risk-card">
+                <span>Moderado</span>
+                <strong>@Model.Forecasts.Count(row => row.RiskLevel == "Moderado")</strong>
+            </div>
+            <div class="risk-card">
+                <span>Alto</span>
+                <strong>@Model.Forecasts.Count(row => row.RiskLevel == "Alto")</strong>
+            </div>
+            <div class="risk-card">
+                <span>Crítico</span>
+                <strong>@Model.Forecasts.Count(row => row.RiskLevel == "Crítico")</strong>
+            </div>
+        </div>
+    }
+
     <h2>Observações por região</h2>
     <p>Total de observações: @Model.Counts.Sum(row => row.Count)</p>
     <table>
@@ -107,7 +144,7 @@
             </table>
         }
 
-        <h2>Estimar a classe de seca</h2>
+        <h2>Estimar o risco de seca</h2>
         <form asp-action="Index" method="post">
             <div asp-validation-summary="All"></div>
             <label asp-for="Input.Sentinel1Moisture">Humidade Sentinel-1 (0 a 1)</label>
@@ -126,11 +163,28 @@
             <input asp-for="Input.OrganicCarbon" type="number" step="any" required />
             <label asp-for="Input.BulkDensity">Densidade aparente (g/cm³)</label>
             <input asp-for="Input.BulkDensity" type="number" step="any" required />
-            <button type="submit">Estimar classe</button>
+            <button type="submit">Calcular risco</button>
         </form>
         @if (Model.Prediction is { } prediction)
         {
             <p role="status">Classe estimada: <strong>@prediction.DroughtClass</strong> · Confiança do modelo: @prediction.Confidence.ToString("P1") · @prediction.Algorithm</p>
+        }
+        @if (Model.Forecast is { } forecast)
+        {
+            <p role="status"><span class="status-tag">Risco @(forecast.RiskLevel)</span> · Score: @forecast.RiskScore.ToString("F1")% · Horizonte: @forecast.HorizonDays dias · Classe: @forecast.DroughtClass</p>
+        }
+        @if (Model.Forecasts.Count > 0)
+        {
+            <h3>Últimos cenários de risco</h3>
+            <table>
+                <thead><tr><th>Classe</th><th>Nível</th><th>Score</th><th>Horizonte</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Forecasts.Take(10))
+                {
+                    <tr><td>@row.DroughtClass</td><td>@row.RiskLevel</td><td>@row.RiskScore.ToString("F1")%</td><td>@row.HorizonDays dias</td></tr>
+                }
+                </tbody>
+            </table>
         }
     }
     else

@@ -9,55 +9,132 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Administração | Classificação de Seca</title>
+    <title>Administração | Previsão de Seca</title>
     <style>
-            body {
-                font: 1rem/1.5 system-ui;
-                max-width: 52rem;
-                margin: 2rem auto;
-                padding: 0 1rem;
-                color: #15382a;
-            }
+        :root {
+            --bg: #f3faf4;
+            --panel: #ffffff;
+            --primary: #14532d;
+            --primary-soft: #eaf6ee;
+            --text: #133725;
+            --muted: #4d6856;
+            --shadow: rgba(20, 83, 45, 0.10);
+        }
 
-            section {
-                border: 1px solid #cad8ce;
-                border-radius: 10px;
-                padding: 1rem;
-                margin-block: 1rem;
-            }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: linear-gradient(180deg, #edf8ee 0%, #f8faf8 100%);
+            color: var(--text);
+        }
 
-            button {
-                background: #14532d;
-                color: white;
-                border: 0;
-                border-radius: 6px;
-                padding: .65rem 1rem;
-                cursor: pointer;
-            }
+        .topbar {
+            background: linear-gradient(135deg, #0f3d2b, #14532d);
+            color: white;
+            padding: 1rem 2rem;
+        }
 
-            input {
-                display: block;
-                margin: .75rem 0;
-                max-width: 100%;
-            }
+        .topbar-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
 
-            .validation-summary-errors {
-                color: #a51d28;
-            }
+        .nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 700;
+            margin-left: 1rem;
+        }
+
+        .auth-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+        .auth-actions a, .auth-actions button { color: white; background: transparent; border: 1px solid rgba(255,255,255,.45); border-radius: 8px; padding: .45rem .7rem; text-decoration: none; font: inherit; cursor: pointer; }
+        .auth-actions form { margin: 0; }
+        .auth-name { color: white; }
+
+        .page {
+            max-width: 1100px;
+            margin: 2rem auto;
+            padding: 0 1rem 3rem;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid rgba(20, 83, 45, 0.08);
+            border-radius: 18px;
+            box-shadow: 0 12px 28px var(--shadow);
+            padding: 1.3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel h2 {
+            margin-top: 0;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: .8rem 1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        input {
+            display: block;
+            width: 100%;
+            margin: .8rem 0 1rem;
+            padding: .8rem .9rem;
+            border: 1px solid #c8d8cf;
+            border-radius: 10px;
+        }
+
+        .status {
+            background: var(--primary-soft);
+            border-left: 4px solid var(--primary);
+            padding: .75rem 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .validation-summary-errors {
+            color: #a51d28;
+            margin: 1rem 0;
+        }
+
+        ul {
+            padding-left: 1.2rem;
+        }
     </style>
 </head>
 <body>
-    <main>
-        <a asp-controller="Drought" asp-action="Index">Voltar ao dashboard</a>
-        <h1>Painel de administração</h1>
+    <header class="topbar">
+        <div class="topbar-inner">
+            <strong>Painel de Administração</strong>
+            <nav class="nav">
+                <a href="@Url.Action("Index", "Home")">Início</a>
+                <a href="@Url.Action("Index", "Forecast")">Previsão</a>
+            </nav>
+            <partial name="_LoginPartial" />
+        </div>
+    </header>
 
+    <main class="page">
         <div asp-validation-summary="All"></div>
         @if (TempData["Mensagem"] is string mensagem)
         {
-            <p role="status">@mensagem</p>
+            <div class="status" role="status">@mensagem</div>
         }
 
-        <section>
+        <section class="panel">
             <h2>Importar observações</h2>
             <form asp-action="Importar" method="post" enctype="multipart/form-data">
                 <label for="ficheiro">Ficheiro CSV (até 2 MB)</label>
@@ -66,16 +143,16 @@
             </form>
         </section>
 
-        <section>
+        <section class="panel">
             <h2>Treino e avaliação</h2>
             <form asp-action="Treinar" method="post">
                 <button type="submit">Treinar e avaliar modelos</button>
             </form>
             @if (Model is not null)
             {
-                <p role="status">
+                <div class="status">
                     @Model.TrainingCount observações de treino e @Model.TestCount de teste.
-                </p>
+                </div>
                 <ul>
                     @foreach (var result in Model.Models)
                     {

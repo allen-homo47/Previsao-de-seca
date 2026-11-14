@@ -1,5 +1,6 @@
 ﻿@model List<Sistema_Classificacao_Seca.Model.SoilObservation>
 @using Sistema_Classificacao_Seca.Model
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 @{
     Layout = null;
@@ -28,6 +29,9 @@
                 color: #14532d;
             }
 
+            .auth-actions { display: flex; align-items: center; gap: .65rem; margin-bottom: 1rem; }
+            .auth-actions form { margin: 0; }
+
             select, button {
                 padding: 10px;
                 margin: 8px 0;
@@ -53,6 +57,7 @@
     </style>
 </head>
 <body>
+    <partial name="_LoginPartial" />
     <h1>Observações da Humidade do Solo</h1>
 
     <form method="get">

@@ -1,7 +1,37 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Sistema_Classificacao_Seca.Data;
 using Sistema_Classificacao_Seca.Services;
+
+static string ResolveInputPath(string rawPath)
+{
+    if (string.IsNullOrWhiteSpace(rawPath))
+        return rawPath;
+
+    if (Path.IsPathRooted(rawPath) && File.Exists(rawPath))
+        return rawPath;
+
+    var current = new DirectoryInfo(Directory.GetCurrentDirectory());
+    var candidates = new List<string>();
+
+    while (current is not null)
+    {
+        candidates.Add(Path.Combine(current.FullName, rawPath));
+        current = current.Parent;
+    }
+
+    if (!Path.IsPathRooted(rawPath))
+        candidates.Insert(0, Path.Combine(Directory.GetCurrentDirectory(), rawPath));
+
+    var resolved = candidates
+        .Distinct(StringComparer.OrdinalIgnoreCase)
+        .FirstOrDefault(candidate => File.Exists(candidate));
+
+    return resolved ?? Path.GetFullPath(rawPath);
+}
 
 var builder = WebApplication.CreateBuilder(
     args.FirstOrDefault() is "--validate-csv" or "--import-csv" or "--evaluate-csv" or "--make-admin"
@@ -13,17 +43,40 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<CsvImportService>();
-builder.Services.AddControllersWithViews();
+builder.Services.AddLocalization();
+builder.Services.AddControllersWithViews()
+    .AddViewLocalization()
+    .AddDataAnnotationsLocalization();
 builder.Services.AddOpenApi();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
     options.SignIn.RequireConfirmedAccount = false;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
 })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
-builder.Services.AddRazorPages();
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
+builder.Services.AddRazorPages()
+    .AddViewLocalization()
+    .AddDataAnnotationsLocalization();
 
 await using var app = builder.Build();
 
@@ -64,7 +117,10 @@ if (args.FirstOrDefault() == "--make-admin")
 
 if (args is ["--validate-csv" or "--import-csv" or "--evaluate-csv", var path])
 {
-    using var reader = File.OpenText(path);
+    var resolvedPath = ResolveInputPath(path);
+    Console.WriteLine($"Ficheiro CSV: {resolvedPath}");
+
+    using var reader = File.OpenText(resolvedPath);
     var rows = await CsvImportService.ReadAsync(reader, CancellationToken.None);
 
     if (rows.Count != 782)
@@ -105,6 +161,13 @@ else
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+var portugueseCulture = new CultureInfo("pt-PT");
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(portugueseCulture),
+    SupportedCultures = [portugueseCulture],
+    SupportedUICultures = [portugueseCulture]
+});
 
 app.UseRouting();
 app.UseAuthentication();

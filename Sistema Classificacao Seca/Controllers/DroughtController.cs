@@ -7,9 +7,10 @@ namespace Sistema_Classificacao_Seca.Controllers;
 
 public sealed record DroughtDashboard(DroughtInput Input, DroughtEvaluation? Evaluation,
     IReadOnlyList<DroughtCount> Counts, IReadOnlyList<MoisturePoint> Moisture,
-    DroughtPrediction? Prediction);
+    IReadOnlyList<DroughtForecast> Forecasts, DroughtPrediction? Prediction, DroughtForecast? Forecast);
 public sealed record MoisturePoint(string Region, DateTime Date, double Sentinel1, double Ascat);
 public sealed record DroughtCount(string Region, string Label, int Count);
+public sealed record ForecastRequest(DroughtInput Input, int HorizonDays = 30);
 
 public sealed class DroughtController(ApplicationDbContext db) : Controller
 {
@@ -19,6 +20,26 @@ public sealed class DroughtController(ApplicationDbContext db) : Controller
     [HttpPost, ValidateAntiForgeryToken]
     public Task<IActionResult> Index([Bind(Prefix = "Input")] DroughtInput input, CancellationToken ct) =>
         Dashboard(input, ModelState.IsValid, ct);
+
+    [HttpPost("/api/forecast")]
+    public async Task<IActionResult> Forecast([FromBody] ForecastRequest? request, CancellationToken ct)
+    {
+        if (request is null || request.Input is null)
+            return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                [nameof(ForecastRequest.Input)] = ["Forneça os dados para a previsão."]
+            }));
+
+        if (!ModelState.IsValid)
+            return ValidationProblem(ModelState);
+
+        using var classifier = await TrainAsync(ct);
+        if (classifier is null)
+            return Problem("Dados insuficientes para treinar o modelo de risco.", statusCode: 503);
+
+        var horizon = request.HorizonDays <= 0 ? 30 : request.HorizonDays;
+        return Ok(classifier.Forecast(request.Input, horizon));
+    }
 
     [HttpGet("/api/models/metrics")]
     public async Task<IActionResult> Evaluation(CancellationToken ct)
@@ -89,9 +110,19 @@ public sealed class DroughtController(ApplicationDbContext db) : Controller
                 group.Average(row => (double)row.Sentinel1Moisture) * 100,
                 group.Average(row => (double)row.AscatMoisture)))
             .ToListAsync(ct);
+        var recent = await db.SoilObservations.AsNoTracking()
+            .OrderByDescending(row => row.Date)
+            .Take(10)
+            .ToListAsync(ct);
+
         using var classifier = await TrainAsync(ct);
+        var forecastList = classifier is null
+            ? []
+            : recent.Select(row => classifier.Forecast(DroughtInput.From(row), 30)).ToList();
+        var currentForecast = predict && classifier is not null ? classifier.Forecast(input, 30) : null;
+
         return View("Index", new DroughtDashboard(input, classifier?.Evaluation, counts, moisture,
-            predict ? classifier?.Predict(input) : null));
+            forecastList, predict ? classifier?.Predict(input) : null, currentForecast));
     }
 
     private async Task<DroughtClassifier?> TrainAsync(CancellationToken ct) =>

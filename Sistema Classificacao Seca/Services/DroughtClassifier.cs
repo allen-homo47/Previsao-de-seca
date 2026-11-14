@@ -46,6 +46,8 @@ public sealed record ModelMetrics(string Algorithm, double Accuracy, double? Mac
 public sealed record DroughtEvaluation(int TrainingCount, int TestCount, DateTime TestFrom,
     string PrimaryAlgorithm, double MajorityBaselineAccuracy, IReadOnlyList<ModelMetrics> Models);
 public sealed record DroughtPrediction(string DroughtClass, float Confidence, string Algorithm, DroughtInput Inputs);
+public sealed record DroughtForecast(string RiskLevel, float RiskScore, int HorizonDays, string DroughtClass,
+    string Algorithm, DroughtInput Inputs);
 
 public sealed class DroughtClassifier : IDisposable
 {
@@ -104,6 +106,28 @@ public sealed class DroughtClassifier : IDisposable
     {
         var output = engine.Predict(TrainingRow.From(input));
         return new DroughtPrediction(output.PredictedLabel, output.Score.Max(), PrimaryAlgorithm, input);
+    }
+
+    public DroughtForecast Forecast(DroughtInput input, int horizonDays = 30)
+    {
+        var output = engine.Predict(TrainingRow.From(input));
+        var predicted = output.PredictedLabel;
+        var confidenceShare = output.Score.Length > 0 ? output.Score.Max() / output.Score.Sum() : 0f;
+        var riskScore = predicted switch
+        {
+            "Normal" => Math.Clamp((1f - confidenceShare) * 100f, 0f, 100f),
+            _ => Math.Clamp(confidenceShare * 100f, 0f, 100f)
+        };
+        var riskLevel = predicted switch
+        {
+            "Normal" => "Baixo",
+            "Moderada" => "Moderado",
+            "Severa" => "Alto",
+            "Extrema" => "Crítico",
+            _ => "Desconhecido"
+        };
+
+        return new DroughtForecast(riskLevel, (float)riskScore, horizonDays, predicted, PrimaryAlgorithm, input);
     }
 
     private static ModelMetrics Evaluate(string algorithm, PredictionEngine<TrainingRow, Output> model,
